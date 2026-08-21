@@ -10,6 +10,7 @@ extern CGFloat const kGroupSeparatorHeight;
 
 @interface TorrentTableView : NSOutlineView<NSOutlineViewDelegate, NSAnimationDelegate, NSPopoverDelegate, NSMenuItemValidation>
 
+- (BOOL)detailedColumnsEnabled;
 - (void)reloadVisibleRows;
 - (void)updatePresentationMode;
 

@@ -28,6 +28,7 @@ static NSInteger const kMaxGroup = 999999;
 static CGFloat const kErrorImageSize = 20.0;
 
 static NSTimeInterval const kToggleProgressSeconds = 0.175;
+static bool const kDetailedColumnsEnabled = false;
 
 static NSString* const kNameColumnIdentifier = @"Name";
 static NSString* const kProgressColumnIdentifier = @"Progress";
@@ -199,11 +200,19 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
 - (void)awakeFromNib
 {
     [super awakeFromNib];
-    [self configureDetailedColumns];
-    [self updatePresentationMode];
+    if (kDetailedColumnsEnabled)
+    {
+        [self configureDetailedColumns];
+        [self updatePresentationMode];
+    }
 
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(refreshTorrentTable) name:@"RefreshTorrentTable"
                                              object:nil];
+}
+
+- (BOOL)detailedColumnsEnabled
+{
+    return kDetailedColumnsEnabled;
 }
 
 - (void)configureDetailedColumns
@@ -395,7 +404,7 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
         BOOL const minimal = [self.fDefaults boolForKey:@"SmallView"];
         BOOL const error = torrent.anyErrorOrWarning;
 
-        if (!minimal && ![tableColumn.identifier isEqualToString:kNameColumnIdentifier])
+        if (kDetailedColumnsEnabled && !minimal && ![tableColumn.identifier isEqualToString:kNameColumnIdentifier])
         {
             if ([tableColumn.identifier isEqualToString:kProgressColumnIdentifier])
             {
@@ -480,7 +489,7 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
                 torrentCell.fRevealButton.hidden = YES;
             }
         }
-        else
+        else if (kDetailedColumnsEnabled)
         {
             torrentCell = [outlineView makeViewWithIdentifier:@"SmallTorrentCell" owner:self];
             torrentCell.fTorrentProgressBarView.hidden = YES;
@@ -517,6 +526,44 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
                 torrentCell.fIconView.image = fileImage;
             }
         }
+        else
+        {
+            torrentCell = [outlineView makeViewWithIdentifier:@"TorrentCell" owner:self];
+            torrentCell.fTorrentProgressField.stringValue = torrent.progressString;
+
+            NSImage* fileImage = torrent.icon;
+            if (error)
+            {
+                NSRect frame = torrentCell.fIconView.frame;
+                NSImage* resultImage = [[NSImage alloc] initWithSize:NSMakeSize(frame.size.height, frame.size.width)];
+                [resultImage lockFocus];
+                [fileImage drawAtPoint:NSZeroPoint fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0];
+
+                NSImage* errorImage = [NSImage imageNamed:NSImageNameCaution];
+                NSRect const errorRect = NSMakeRect(frame.origin.x, 0, kErrorImageSize, kErrorImageSize);
+                [errorImage drawInRect:errorRect fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0
+                        respectFlipped:YES
+                                 hints:nil];
+                [resultImage unlockFocus];
+                torrentCell.fIconView.image = resultImage;
+            }
+            else
+            {
+                torrentCell.fIconView.image = fileImage;
+            }
+
+            NSString* status;
+            if (self.fHoverEventDict)
+            {
+                NSInteger row = [self rowForItem:item];
+                NSInteger hoverRow = [self.fHoverEventDict[@"row"] integerValue];
+                if (row == hoverRow)
+                {
+                    status = self.fHoverEventDict[@"string"];
+                }
+            }
+            torrentCell.fTorrentStatusField.stringValue = status ?: torrent.statusString;
+        }
 
         torrentCell.fTorrentTableView = self;
 
@@ -551,7 +598,7 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
     }
     else
     {
-        if (![tableColumn.identifier isEqualToString:kNameColumnIdentifier])
+        if (kDetailedColumnsEnabled && ![tableColumn.identifier isEqualToString:kNameColumnIdentifier])
         {
             return nil;
         }
