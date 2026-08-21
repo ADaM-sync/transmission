@@ -632,7 +632,7 @@ static void removeKeRangerRansomware()
 
     self.fWindow.toolbarStyle = NSWindowToolbarStyleUnified;
     self.fWindow.titleVisibility = NSWindowTitleHidden;
-    self.fWindow. = NSMakeSize(760.0, 260.0);
+    self.fWindow.contentMinSize = NSMakeSize(760.0, 260.0);
 
     // The detailed transfer table needs room to keep progress, rates, and ETA visible together.
     if (NSWidth(self.fWindow.frame) < 900.0)
