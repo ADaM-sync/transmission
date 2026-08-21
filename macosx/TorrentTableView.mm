@@ -20,6 +20,7 @@
 #import "TorrentCellActionButton.h"
 #import "TorrentCellControlButton.h"
 #import "TorrentCellRevealButton.h"
+#import "ProgressBarView.h"
 
 CGFloat const kGroupSeparatorHeight = 18.0;
 
@@ -27,6 +28,88 @@ static NSInteger const kMaxGroup = 999999;
 static CGFloat const kErrorImageSize = 20.0;
 
 static NSTimeInterval const kToggleProgressSeconds = 0.175;
+
+static NSString* const kNameColumnIdentifier = @"Name";
+static NSString* const kProgressColumnIdentifier = @"Progress";
+static NSString* const kStatusColumnIdentifier = @"Status";
+static NSString* const kDownloadColumnIdentifier = @"Download";
+static NSString* const kUploadColumnIdentifier = @"Upload";
+static NSString* const kEtaColumnIdentifier = @"ETA";
+static NSString* const kPeersColumnIdentifier = @"Peers";
+
+@interface TorrentTableTextCell : NSTableCellView
+- (instancetype)initWithIdentifier:(NSUserInterfaceItemIdentifier)identifier alignment:(NSTextAlignment)alignment;
+@end
+
+@implementation TorrentTableTextCell
+
+- (instancetype)initWithIdentifier:(NSUserInterfaceItemIdentifier)identifier alignment:(NSTextAlignment)alignment
+{
+    if ((self = [super initWithFrame:NSZeroRect]))
+    {
+        self.identifier = identifier;
+
+        NSTextField* field = [NSTextField labelWithString:@""];
+        field.frame = self.bounds;
+        field.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        field.alignment = alignment;
+        field.lineBreakMode = NSLineBreakByTruncatingTail;
+        field.font = [NSFont systemFontOfSize:NSFont.smallSystemFontSize];
+        field.textColor = NSColor.secondaryLabelColor;
+
+        self.textField = field;
+        [self addSubview:field];
+    }
+
+    return self;
+}
+
+@end
+
+@interface TorrentProgressTableCell : NSTableCellView
+@property(nonatomic, weak) TorrentTableView* torrentTableView;
+@property(nonatomic) Torrent* torrent;
+@end
+
+@implementation TorrentProgressTableCell
+
+- (BOOL)isFlipped
+{
+    return YES;
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+    [super drawRect:dirtyRect];
+
+    if (self.torrent == nil || self.torrentTableView == nil)
+    {
+        return;
+    }
+
+    NSRect const barRect = NSInsetRect(self.bounds, 4.0, MAX(4.0, floor((NSHeight(self.bounds) - 16.0) * 0.5)));
+    [ProgressBarView.sharedInstance drawBarInRect:barRect forTableView:self.torrentTableView withTorrent:self.torrent];
+
+    NSString* progress = self.torrent.magnet ? self.torrent.progressString : [NSString percentString:self.torrent.progress longDecimals:YES];
+    NSMutableParagraphStyle* paragraph = [NSMutableParagraphStyle new];
+    paragraph.alignment = NSTextAlignmentCenter;
+
+    NSShadow* shadow = [NSShadow new];
+    shadow.shadowColor = [NSColor colorWithWhite:0.0 alpha:0.45];
+    shadow.shadowOffset = NSMakeSize(0.0, -1.0);
+    shadow.shadowBlurRadius = 1.0;
+
+    NSDictionary* attributes = @{
+        NSFontAttributeName : [NSFont boldSystemFontOfSize:11.0],
+        NSForegroundColorAttributeName : NSColor.whiteColor,
+        NSParagraphStyleAttributeName : paragraph,
+        NSShadowAttributeName : shadow
+    };
+    NSRect const textRect = NSInsetRect(barRect, 4.0, 1.0);
+    [progress drawWithRect:textRect options:NSStringDrawingUsesLineFragmentOrigin attributes:attributes];
+}
+
+@end
 
 @interface NSIndexSet (Transmission)
 - (NSIndexSet*)symmetricDifference:(NSIndexSet*)otherSet;
@@ -116,8 +199,60 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
 - (void)awakeFromNib
 {
     [super awakeFromNib];
+    [self configureDetailedColumns];
+    [self updatePresentationMode];
+
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(refreshTorrentTable) name:@"RefreshTorrentTable"
                                              object:nil];
+}
+
+- (void)configureDetailedColumns
+{
+    NSTableColumn* nameColumn = [self tableColumnWithIdentifier:@"Torrent"];
+    nameColumn.identifier = kNameColumnIdentifier;
+    nameColumn.title = NSLocalizedString(@"Name", "Torrent table -> column title");
+    nameColumn.width = 290.0;
+    nameColumn.minWidth = 180.0;
+    nameColumn.maxWidth = 600.0;
+
+    self.allowsColumnReordering = YES;
+    self.allowsColumnResizing = YES;
+    self.autosaveTableColumns = YES;
+    self.autosaveName = @"TransmissionPlusTableColumns";
+    self.enclosingScrollView.hasHorizontalScroller = YES;
+
+    NSArray<NSDictionary*>* columns = @[
+        @{ @"id" : kProgressColumnIdentifier, @"title" : NSLocalizedString(@"Progress", "Torrent table -> column title"), @"width" : @165.0, @"min" : @120.0 },
+        @{ @"id" : kStatusColumnIdentifier, @"title" : NSLocalizedString(@"Status", "Torrent table -> column title"), @"width" : @120.0, @"min" : @100.0 },
+        @{ @"id" : kDownloadColumnIdentifier, @"title" : NSLocalizedString(@"Down Speed", "Torrent table -> column title"), @"width" : @98.0, @"min" : @85.0 },
+        @{ @"id" : kUploadColumnIdentifier, @"title" : NSLocalizedString(@"Up Speed", "Torrent table -> column title"), @"width" : @98.0, @"min" : @85.0 },
+        @{ @"id" : kEtaColumnIdentifier, @"title" : NSLocalizedString(@"ETA", "Torrent table -> column title"), @"width" : @100.0, @"min" : @84.0 },
+        @{ @"id" : kPeersColumnIdentifier, @"title" : NSLocalizedString(@"Seeds/Peers", "Torrent table -> column title"), @"width" : @105.0, @"min" : @90.0 }
+    ];
+
+    for (NSDictionary* configuration in columns)
+    {
+        NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:configuration[@"id"]];
+        column.title = configuration[@"title"];
+        column.width = [configuration[@"width"] doubleValue];
+        column.minWidth = [configuration[@"min"] doubleValue];
+        column.maxWidth = 240.0;
+        column.headerCell.alignment = NSTextAlignmentCenter;
+        [self addTableColumn:column];
+    }
+}
+
+- (void)updatePresentationMode
+{
+    BOOL const compact = [self.fDefaults boolForKey:@"SmallView"];
+
+    for (NSTableColumn* column in self.tableColumns)
+    {
+        column.hidden = compact && ![column.identifier isEqualToString:kNameColumnIdentifier];
+    }
+
+    self.headerView.hidden = compact;
+    self.enclosingScrollView.hasHorizontalScroller = !compact;
 }
 
 - (void)refreshTorrentTable
@@ -159,11 +294,13 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
             }
         }];
 
-        [self reloadDataForRowIndexes:visibleIndexSet columnIndexes:[NSIndexSet indexSetWithIndex:0]];
+        [self reloadDataForRowIndexes:visibleIndexSet
+                        columnIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, self.numberOfColumns)]];
     }
     else
     {
-        [self reloadDataForRowIndexes:[NSIndexSet indexSetWithIndexesInRange:range] columnIndexes:[NSIndexSet indexSetWithIndex:0]];
+        [self reloadDataForRowIndexes:[NSIndexSet indexSetWithIndexesInRange:range]
+                        columnIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, self.numberOfColumns)]];
     }
 }
 
@@ -239,6 +376,17 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
     return [item isKindOfClass:[Torrent class]] ? self.rowHeight : kGroupSeparatorHeight;
 }
 
+- (TorrentTableTextCell*)textCellForTableColumn:(NSTableColumn*)tableColumn outlineView:(NSOutlineView*)outlineView
+{
+    NSUserInterfaceItemIdentifier const identifier = [@"TorrentTable." stringByAppendingString:tableColumn.identifier];
+    TorrentTableTextCell* cell = [outlineView makeViewWithIdentifier:identifier owner:self];
+    if (cell == nil)
+    {
+        cell = [[TorrentTableTextCell alloc] initWithIdentifier:identifier alignment:NSTextAlignmentCenter];
+    }
+    return cell;
+}
+
 - (NSView*)outlineView:(NSOutlineView*)outlineView viewForTableColumn:(NSTableColumn*)tableColumn item:(id)item
 {
     if ([item isKindOfClass:[Torrent class]])
@@ -247,10 +395,63 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
         BOOL const minimal = [self.fDefaults boolForKey:@"SmallView"];
         BOOL const error = torrent.anyErrorOrWarning;
 
+        if (!minimal && ![tableColumn.identifier isEqualToString:kNameColumnIdentifier])
+        {
+            if ([tableColumn.identifier isEqualToString:kProgressColumnIdentifier])
+            {
+                TorrentProgressTableCell* cell = [outlineView makeViewWithIdentifier:@"TorrentProgressCell" owner:self];
+                if (cell == nil)
+                {
+                    cell = [[TorrentProgressTableCell alloc] initWithFrame:NSZeroRect];
+                    cell.identifier = @"TorrentProgressCell";
+                }
+
+                cell.torrent = torrent;
+                cell.torrentTableView = self;
+                cell.objectValue = torrent;
+                cell.toolTip = torrent.progressString;
+                cell.needsDisplay = YES;
+                return cell;
+            }
+
+            TorrentTableTextCell* cell = [self textCellForTableColumn:tableColumn outlineView:outlineView];
+            NSString* value;
+
+            if ([tableColumn.identifier isEqualToString:kStatusColumnIdentifier])
+            {
+                value = error ? torrent.statusString : torrent.stateString;
+            }
+            else if ([tableColumn.identifier isEqualToString:kDownloadColumnIdentifier])
+            {
+                value = [NSString stringForSpeed:torrent.downloadRate];
+            }
+            else if ([tableColumn.identifier isEqualToString:kUploadColumnIdentifier])
+            {
+                value = [NSString stringForSpeed:torrent.uploadRate];
+            }
+            else if ([tableColumn.identifier isEqualToString:kEtaColumnIdentifier])
+            {
+                value = torrent.remainingTimeString;
+            }
+            else if ([tableColumn.identifier isEqualToString:kPeersColumnIdentifier])
+            {
+                NSString* seeders = torrent.seederCount >= 0 ? [NSString stringWithFormat:@"%ld", (long)torrent.seederCount] : @"—";
+                NSString* peers = torrent.totalPeersConnected > 0 ? [NSString stringWithFormat:@"%lu", (unsigned long)torrent.totalPeersConnected] : @"—";
+                value = [NSString stringWithFormat:@"%@ / %@", seeders, peers];
+            }
+
+            cell.textField.stringValue = value ?: @"—";
+            cell.toolTip = cell.textField.stringValue;
+            return cell;
+        }
+
         TorrentCell* torrentCell;
         if (minimal)
         {
             torrentCell = [outlineView makeViewWithIdentifier:@"SmallTorrentCell" owner:self];
+            torrentCell.fTorrentProgressBarView.hidden = NO;
+            torrentCell.fTorrentStatusField.hidden = NO;
+            torrentCell.fIconView.hidden = NO;
 
             // set torrent icon or error badge
             torrentCell.fIconView.image = error ? [NSImage imageNamed:NSImageNameCaution] : torrent.icon;
@@ -281,8 +482,13 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
         }
         else
         {
-            torrentCell = [outlineView makeViewWithIdentifier:@"TorrentCell" owner:self];
-            torrentCell.fTorrentProgressField.stringValue = torrent.progressString;
+            torrentCell = [outlineView makeViewWithIdentifier:@"SmallTorrentCell" owner:self];
+            torrentCell.fTorrentProgressBarView.hidden = YES;
+            torrentCell.fTorrentStatusField.hidden = YES;
+            torrentCell.fActionButton.hidden = YES;
+            torrentCell.fControlButton.hidden = YES;
+            torrentCell.fRevealButton.hidden = YES;
+            torrentCell.fIconView.hidden = NO;
 
             // set torrent icon and error badge
             NSImage* fileImage = torrent.icon;
@@ -310,20 +516,6 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
             {
                 torrentCell.fIconView.image = fileImage;
             }
-
-            // set torrent status
-            NSString* status;
-            if (self.fHoverEventDict)
-            {
-                NSInteger row = [self rowForItem:item];
-                NSInteger hoverRow = [self.fHoverEventDict[@"row"] integerValue];
-
-                if (row == hoverRow)
-                {
-                    status = self.fHoverEventDict[@"string"];
-                }
-            }
-            torrentCell.fTorrentStatusField.stringValue = status ?: torrent.statusString;
         }
 
         torrentCell.fTorrentTableView = self;
@@ -359,6 +551,11 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
     }
     else
     {
+        if (![tableColumn.identifier isEqualToString:kNameColumnIdentifier])
+        {
+            return nil;
+        }
+
         TorrentGroup* group = (TorrentGroup*)item;
         GroupCell* groupCell = [outlineView makeViewWithIdentifier:@"GroupCell" owner:self];
 
