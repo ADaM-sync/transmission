@@ -28,7 +28,7 @@ static NSInteger const kMaxGroup = 999999;
 static CGFloat const kErrorImageSize = 20.0;
 
 static NSTimeInterval const kToggleProgressSeconds = 0.175;
-static bool const kDetailedColumnsEnabled = false;
+static bool const kDetailedColumnsEnabled = true;
 
 static NSString* const kNameColumnIdentifier = @"Name";
 static NSString* const kProgressColumnIdentifier = @"Progress";
@@ -200,11 +200,8 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
 - (void)awakeFromNib
 {
     [super awakeFromNib];
-    if (kDetailedColumnsEnabled)
-    {
-        [self configureDetailedColumns];
-        [self updatePresentationMode];
-    }
+    [self configureDetailedColumns];
+    [self updatePresentationMode];
 
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(refreshTorrentTable) name:@"RefreshTorrentTable"
                                              object:nil];

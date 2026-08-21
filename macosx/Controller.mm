@@ -115,7 +115,7 @@ typedef NS_ENUM(NSUInteger, SortOrderTag) { //
 
 static NSString* const kTorrentTableViewDataType = @"TorrentTableViewDataType";
 
-static CGFloat const kRowHeightRegular = 62.0;
+static CGFloat const kRowHeightRegular = 38.0;
 static CGFloat const kRowHeightSmall = 22.0;
 
 static CGFloat const kStatusBarHeight = 24.0;
@@ -636,6 +636,17 @@ static void removeKeRangerRansomware()
 
     self.fWindow.toolbarStyle = NSWindowToolbarStyleUnified;
     self.fWindow.titleVisibility = NSWindowTitleHidden;
+    self.fWindow.contentMinSize = NSMakeSize(760.0, 260.0);
+
+    // Keep progress, rates, ETA, and peer information visible together.
+    if (NSWidth(self.fWindow.frame) < 900.0)
+    {
+        NSRect frame = self.fWindow.frame;
+        frame.size.width = 1080.0;
+        frame.size.height = MAX(frame.size.height, 520.0);
+        [self.fWindow setFrame:frame display:NO];
+    }
+
     self.fWindow.delegate = self; //do manually to avoid placement issue
 
     [self.fWindow makeFirstResponder:self.fTableView];
@@ -4034,10 +4045,7 @@ static void removeKeRangerRansomware()
     //self.fTableView.usesAlternatingRowBackgroundColors = !makeSmall;
 
     self.fTableView.rowHeight = makeSmall ? kRowHeightSmall : kRowHeightRegular;
-    if (self.fTableView.detailedColumnsEnabled)
-    {
-        [self.fTableView updatePresentationMode];
-    }
+    [self.fTableView updatePresentationMode];
 
     [self.fTableView beginUpdates];
     [self.fTableView
