@@ -44,7 +44,6 @@ jobs:
 
           mkdir package
           ditto "$app_path" 'package/Transmission Plus.app'
-          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Transmission Plus' 'package/Transmission Plus.app/Contents/Info.plist'
           hdiutil create \
             -volname 'Transmission Plus' \
             -srcfolder package \
