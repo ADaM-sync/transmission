@@ -17,8 +17,11 @@
         Torrent* torrent = (Torrent*)self.objectValue;
 
         // draw progress bar
-        NSRect barRect = self.fTorrentProgressBarView.frame;
-        [ProgressBarView.sharedInstance drawBarInRect:barRect forTableView:self.fTorrentTableView withTorrent:torrent];
+        if (!self.fTorrentProgressBarView.hidden)
+        {
+            NSRect barRect = self.fTorrentProgressBarView.frame;
+            [ProgressBarView.sharedInstance drawBarInRect:barRect forTableView:self.fTorrentTableView withTorrent:torrent];
+        }
 
         // set priority icon
         if (torrent.priority != TR_PRI_NORMAL)
