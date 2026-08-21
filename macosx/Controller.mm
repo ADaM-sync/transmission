@@ -507,7 +507,11 @@ static void removeKeRangerRansomware()
 
         initUnits();
 
-        auto const default_config_dir = tr_getDefaultConfigDir("Transmission");
+        // Keep Transmission Plus independent from the upstream app. Recent
+        // Transmission versions lock this directory while running, so sharing
+        // the original "Transmission" folder causes the second app to exit
+        // immediately.
+        auto const default_config_dir = tr_getDefaultConfigDir("Transmission Plus");
         _fLib = tr_sessionInit(default_config_dir, YES, settings);
         _fConfigDirectory = @(default_config_dir.c_str());
 
