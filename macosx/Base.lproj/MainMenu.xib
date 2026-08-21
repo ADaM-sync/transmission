@@ -31,7 +31,7 @@
                             <rect key="frame" x="0.0" y="0.0" width="480" height="240"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
-                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="NO" columnResizing="NO" autosaveColumns="NO" rowHeight="62" rowSizeStyle="automatic" viewBased="YES" indentationPerLevel="16" indentationMarkerFollowsCell="NO" autoresizesOutlineColumn="YES" outlineTableColumn="3093" id="3091" customClass="TorrentTableView">
+                                <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnReordering="YES" columnResizing="YES" autosaveColumns="YES" rowHeight="62" rowSizeStyle="automatic" viewBased="YES" indentationPerLevel="16" indentationMarkerFollowsCell="NO" autoresizesOutlineColumn="YES" outlineTableColumn="3093" headerView="tP1-Hd-r01" id="3091" customClass="TorrentTableView">
                                     <rect key="frame" x="0.0" y="0.0" width="480" height="240"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <size key="intercellSpacing" width="2" height="3"/>
@@ -41,7 +41,7 @@
                                         <tableColumn identifier="Torrent" editable="NO" width="448" minWidth="16" maxWidth="3000" id="3093">
                                             <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="Torrent">
                                                 <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" white="0.33333299" alpha="1" colorSpace="calibratedWhite"/>
+                                                <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
                                             </tableHeaderCell>
                                             <imageCell key="dataCell" controlSize="small" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="imageCell:Uue-OE-Cnc:image" id="Uue-OE-Cnc">
                                                 <font key="font" metaFont="system"/>
@@ -437,6 +437,10 @@
                             <rect key="frame" x="499" y="0.0" width="16" height="0.0"/>
                             <autoresizingMask key="autoresizingMask"/>
                         </scroller>
+                        <tableHeaderView key="headerView" wantsLayer="YES" id="tP1-Hd-r01">
+                            <rect key="frame" x="0.0" y="0.0" width="480" height="24"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                        </tableHeaderView>
                     </scrollView>
                     <customView verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="JCm-xb-Dpw" userLabel="Bottom bar">
                         <rect key="frame" x="0.0" y="0.0" width="480" height="24"/>
