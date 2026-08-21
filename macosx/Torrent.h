@@ -175,6 +175,8 @@ extern NSString* const kTorrentDidChangeGroupNotification;
 
 @property(nonatomic, readonly) NSUInteger peersSendingToUs;
 @property(nonatomic, readonly) NSUInteger peersGettingFromUs;
+@property(nonatomic, readonly) NSInteger seederCount;
+@property(nonatomic, readonly) NSInteger leecherCount;
 
 @property(nonatomic, readonly) CGFloat downloadRate;
 @property(nonatomic, readonly) CGFloat uploadRate;
