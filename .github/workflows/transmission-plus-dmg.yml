@@ -1,0 +1,60 @@
+name: Build Transmission Plus DMG
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/transmission-plus-ui
+    paths:
+      - macosx/**
+      - Transmission.xcodeproj/**
+      - .github/workflows/transmission-plus-dmg.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build-dmg:
+    name: Build unsigned DMG
+    runs-on: macos-26
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Build the macOS app
+        run: >-
+          xcodebuild
+          -project Transmission.xcodeproj
+          -scheme Transmission
+          -configuration 'Release - Debug'
+          -derivedDataPath build
+          ONLY_ACTIVE_ARCH=NO
+          CODE_SIGNING_ALLOWED=NO
+          build
+
+      - name: Package Transmission Plus
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_path="$(find build/Build/Products -type d -name 'Transmission.app' -print -quit)"
+          test -n "$app_path"
+
+          mkdir package
+          ditto "$app_path" 'package/Transmission Plus.app'
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Transmission Plus' 'package/Transmission Plus.app/Contents/Info.plist'
+          hdiutil create \
+            -volname 'Transmission Plus' \
+            -srcfolder package \
+            -ov \
+            -format UDZO \
+            'Transmission-Plus.dmg'
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v6
+        with:
+          name: Transmission-Plus-DMG
+          path: Transmission-Plus.dmg
+          if-no-files-found: error
