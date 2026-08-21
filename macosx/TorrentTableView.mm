@@ -246,7 +246,6 @@ static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableCol
     {
         self.headerView = [[NSTableHeaderView alloc] initWithFrame:NSMakeRect(0.0, 0.0, NSWidth(self.bounds), 24.0)];
     }
-    self.enclosingScrollView.headerView = self.headerView;
 
     NSArray<NSDictionary*>* columns = @[
         @{ @"id" : kProgressColumnIdentifier, @"title" : NSLocalizedString(@"Progress", "Torrent table -> column title"), @"width" : @165.0, @"min" : @120.0 },
