@@ -44,6 +44,8 @@ jobs:
 
           mkdir package
           ditto "$app_path" 'package/Transmission Plus.app'
+          codesign --force --deep --sign - 'package/Transmission Plus.app'
+          codesign --verify --deep --strict --verbose=2 'package/Transmission Plus.app'
           hdiutil create \
             -volname 'Transmission Plus' \
             -srcfolder package \
