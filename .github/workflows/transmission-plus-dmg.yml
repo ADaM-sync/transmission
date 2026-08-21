@@ -29,7 +29,7 @@ jobs:
           xcodebuild
           -project Transmission.xcodeproj
           -scheme Transmission
-          -configuration 'Release - Debug'
+          -configuration Release
           -derivedDataPath build
           ONLY_ACTIVE_ARCH=NO
           CODE_SIGNING_ALLOWED=NO
