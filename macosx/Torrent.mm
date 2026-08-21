@@ -1494,6 +1494,30 @@ static tr_torrent_rename_done_func makeRenameDoneCallback(NSDictionary* contextI
     return self.fStat.peers_getting_from_us;
 }
 
+- (NSInteger)seederCount
+{
+    int64_t largestCount = -1;
+
+    for (size_t i = 0, n = tr_torrentTrackerCount(self.fHandle); i < n; ++i)
+    {
+        largestCount = MAX(largestCount, tr_torrentTracker(self.fHandle, i).seederCount);
+    }
+
+    return largestCount;
+}
+
+- (NSInteger)leecherCount
+{
+    int64_t largestCount = -1;
+
+    for (size_t i = 0, n = tr_torrentTrackerCount(self.fHandle); i < n; ++i)
+    {
+        largestCount = MAX(largestCount, tr_torrentTracker(self.fHandle, i).leecherCount);
+    }
+
+    return largestCount;
+}
+
 - (CGFloat)downloadRate
 {
     return self.fStat.piece_download_speed.count(Speed::Units::KByps);
