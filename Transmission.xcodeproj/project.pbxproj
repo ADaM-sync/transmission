@@ -4481,7 +4481,7 @@
 					"-DWITH_CCRYPTO",
 				);
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
-				PRODUCT_BUNDLE_IDENTIFIER = org.m0k.transmission;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adam3k3.transmission-plus;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -4690,7 +4690,7 @@
 					"-DNDEBUG",
 				);
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
-				PRODUCT_BUNDLE_IDENTIFIER = org.m0k.transmission;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adam3k3.transmission-plus;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -4794,7 +4794,7 @@
 					"-DWITH_CCRYPTO",
 				);
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
-				PRODUCT_BUNDLE_IDENTIFIER = org.m0k.transmission;
+				PRODUCT_BUNDLE_IDENTIFIER = com.adam3k3.transmission-plus;
 				SDKROOT = macosx;
 			};
 			name = "Release - Debug";
