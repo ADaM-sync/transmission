@@ -17,6 +17,7 @@
 - (void)updateOptions;
 
 - (IBAction)setTab:(id)sender;
+- (void)showFilesTab;
 
 - (void)setNextTab;
 - (void)setPreviousTab;

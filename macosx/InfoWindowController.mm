@@ -459,6 +459,12 @@ typedef NS_ENUM(NSUInteger, TabTag) {
     [self setTab:nil];
 }
 
+- (void)showFilesTab
+{
+    self.fTabs.selectedSegment = TabTagFile;
+    [self setTab:nil];
+}
+
 - (void)setPreviousTab
 {
     NSInteger tag = self.fTabs.selectedSegment - 1;

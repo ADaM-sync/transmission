@@ -128,6 +128,9 @@ static NSString* const kTransferPlist = @"Transfers.plist";
 
 static NSString* const kWebsiteURL = @"https://transmissionbt.com/";
 static NSString* const kForumURL = @"https://forum.transmissionbt.com/";
+static NSString* const kTransmissionPlusGitHubURL = @"https://github.com/ADaM-sync";
+static NSString* const kTransmissionPlusSupportURL = @"https://github.com/sponsors/ADaM-sync";
+static NSString* const kTransmissionPlusAppearanceKey = @"TransmissionPlusAppearance";
 static NSString* const kGithubURL = @"https://github.com/transmission/transmission";
 static NSString* const kDonateURL = @"https://transmissionbt.com/donate/";
 
@@ -439,6 +442,9 @@ static void removeKeRangerRansomware()
 @property(nonatomic) BOOL fSoundPlaying;
 
 - (void)removeTorrentsImpl:(NSArray<Torrent*>*)torrents deleteData:(BOOL)deleteData;
+- (void)configureTransmissionPlusMenu;
+- (void)applyTransmissionPlusAppearance;
+- (void)updateTransmissionPlusAppearanceMenu:(NSMenu*)menu;
 
 @end
 
@@ -626,6 +632,9 @@ static void removeKeRangerRansomware()
 - (void)awakeFromNib
 {
     [super awakeFromNib];
+
+    [self configureTransmissionPlusMenu];
+    [self applyTransmissionPlusAppearance];
 
     Toolbar* toolbar = [[Toolbar alloc] initWithIdentifier:@"TRMainToolbar"];
     toolbar.delegate = self;
@@ -971,6 +980,141 @@ static void removeKeRangerRansomware()
             }
         }
     }
+}
+
+#pragma mark - Transmission Plus
+
+- (void)configureTransmissionPlusMenu
+{
+    NSMenu* mainMenu = NSApp.mainMenu;
+    if (mainMenu == nil || [mainMenu itemWithTitle:@"Transmission Plus"] != nil)
+    {
+        return;
+    }
+
+    NSMenu* plusMenu = [[NSMenu alloc] initWithTitle:@"Transmission Plus"];
+    NSMenuItem* plusMenuItem = [[NSMenuItem alloc] initWithTitle:@"Transmission Plus" action:nil keyEquivalent:@""];
+    plusMenuItem.submenu = plusMenu;
+
+    NSUInteger insertIndex = mainMenu.numberOfItems;
+    for (NSUInteger index = 0; index < mainMenu.numberOfItems; ++index)
+    {
+        if ([[mainMenu itemAtIndex:index].title isEqualToString:@"Help"])
+        {
+            insertIndex = index;
+            break;
+        }
+    }
+    [mainMenu insertItem:plusMenuItem atIndex:insertIndex];
+
+    NSMenuItem* creditItem = [[NSMenuItem alloc] initWithTitle:@"Skinned by Adam A" action:nil keyEquivalent:@""];
+    creditItem.enabled = NO;
+    [plusMenu addItem:creditItem];
+
+    NSMenuItem* githubItem = [[NSMenuItem alloc] initWithTitle:@"Adam A on GitHub" action:@selector(linkTransmissionPlusGitHub:) keyEquivalent:@""];
+    githubItem.target = self;
+    [plusMenu addItem:githubItem];
+
+    NSMenuItem* supportItem = [[NSMenuItem alloc] initWithTitle:@"Support Adam A" action:@selector(linkTransmissionPlusSupport:) keyEquivalent:@""];
+    supportItem.target = self;
+    [plusMenu addItem:supportItem];
+
+    [plusMenu addItem:NSMenuItem.separatorItem];
+
+    NSMenuItem* filesItem = [[NSMenuItem alloc] initWithTitle:@"Show Selected Transfer Files" action:@selector(showFilesForSelectedTorrent:) keyEquivalent:@""];
+    filesItem.target = self;
+    [plusMenu addItem:filesItem];
+
+    NSMenuItem* featuresItem = [[NSMenuItem alloc] initWithTitle:@"What’s New in Transmission Plus" action:@selector(showTransmissionPlusFeatures:) keyEquivalent:@""];
+    featuresItem.target = self;
+    [plusMenu addItem:featuresItem];
+
+    [plusMenu addItem:NSMenuItem.separatorItem];
+
+    NSMenu* appearanceMenu = [[NSMenu alloc] initWithTitle:@"Appearance"];
+    NSMenuItem* appearanceItem = [[NSMenuItem alloc] initWithTitle:@"Appearance" action:nil keyEquivalent:@""];
+    appearanceItem.submenu = appearanceMenu;
+    [plusMenu addItem:appearanceItem];
+
+    NSArray<NSDictionary*>* appearances = @[
+        @{ @"title" : @"Light", @"value" : @"light" },
+        @{ @"title" : @"Dark", @"value" : @"dark" },
+        @{ @"title" : @"Follow System", @"value" : @"system" }
+    ];
+    for (NSDictionary* appearance in appearances)
+    {
+        NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:appearance[@"title"]
+                                                       action:@selector(setTransmissionPlusAppearance:)
+                                                keyEquivalent:@""];
+        item.target = self;
+        item.representedObject = appearance[@"value"];
+        [appearanceMenu addItem:item];
+    }
+
+    [self updateTransmissionPlusAppearanceMenu:appearanceMenu];
+}
+
+- (void)applyTransmissionPlusAppearance
+{
+    NSString* const appearance = [self.fDefaults stringForKey:kTransmissionPlusAppearanceKey] ?: @"system";
+
+    if (@available(macOS 10.14, *))
+    {
+        if ([appearance isEqualToString:@"light"])
+        {
+            NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+        }
+        else if ([appearance isEqualToString:@"dark"])
+        {
+            NSApp.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+        }
+        else
+        {
+            NSApp.appearance = nil;
+        }
+    }
+}
+
+- (void)updateTransmissionPlusAppearanceMenu:(NSMenu*)menu
+{
+    NSString* const selectedAppearance = [self.fDefaults stringForKey:kTransmissionPlusAppearanceKey] ?: @"system";
+    for (NSMenuItem* item in menu.itemArray)
+    {
+        if (item.action == @selector(setTransmissionPlusAppearance:))
+        {
+            item.state = [item.representedObject isEqualToString:selectedAppearance] ? NSControlStateValueOn : NSControlStateValueOff;
+        }
+    }
+}
+
+- (void)setTransmissionPlusAppearance:(NSMenuItem*)sender
+{
+    [self.fDefaults setObject:sender.representedObject forKey:kTransmissionPlusAppearanceKey];
+    [self applyTransmissionPlusAppearance];
+    [self updateTransmissionPlusAppearanceMenu:sender.menu];
+}
+
+- (void)linkTransmissionPlusGitHub:(id)sender
+{
+    [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:kTransmissionPlusGitHubURL]];
+}
+
+- (void)linkTransmissionPlusSupport:(id)sender
+{
+    [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:kTransmissionPlusSupportURL]];
+}
+
+- (void)showTransmissionPlusFeatures:(id)sender
+{
+    NSAlert* alert = [[NSAlert alloc] init];
+    alert.messageText = @"Transmission Plus";
+    alert.informativeText = @"Skinned by Adam A\n\n"
+                            @"• A clean, reorderable transfer dashboard\n"
+                            @"• Progress, status, speed, ETA, and peers at a glance\n"
+                            @"• Light, dark, and system appearance choices\n"
+                            @"• Open a transfer’s nested file list with one action";
+    [alert addButtonWithTitle:@"OK"];
+    [alert runModal];
 }
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)app hasVisibleWindows:(BOOL)visibleWindows
@@ -2347,6 +2491,19 @@ static void removeKeRangerRansomware()
     }
 
     [self.fWindow.toolbar validateVisibleItems];
+}
+
+- (void)showFilesForSelectedTorrent:(id)sender
+{
+    if (self.fTableView.selectedTorrents.count == 0)
+    {
+        return;
+    }
+
+    [self resetInfo];
+    [self.fInfoController showFilesTab];
+    [self.fInfoController updateInfoStats];
+    [self.fInfoController.window makeKeyAndOrderFront:nil];
 }
 
 - (void)resetInfo
@@ -4623,6 +4780,12 @@ static void removeKeRangerRansomware()
 {
     SEL action = menuItem.action;
 
+    if (action == @selector(setTransmissionPlusAppearance:))
+    {
+        [self updateTransmissionPlusAppearanceMenu:menuItem.menu];
+        return YES;
+    }
+
     if (action == @selector(toggleSpeedLimit:))
     {
         menuItem.state = [self.fDefaults boolForKey:@"SpeedLimit"] ? NSControlStateValueOn : NSControlStateValueOff;
@@ -4631,6 +4794,11 @@ static void removeKeRangerRansomware()
 
     //only enable some items if it is in a context menu or the window is usable
     BOOL canUseTable = self.fWindow.keyWindow || menuItem.menu.supermenu != NSApp.mainMenu;
+
+    if (action == @selector(showFilesForSelectedTorrent:))
+    {
+        return canUseTable && self.fTableView.selectedTorrents.count == 1;
+    }
 
     //enable open items
     if (action == @selector(openShowSheet:) || action == @selector(openURLShowSheet:))

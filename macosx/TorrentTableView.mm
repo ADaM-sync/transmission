@@ -37,6 +37,7 @@ static NSString* const kDownloadColumnIdentifier = @"Download";
 static NSString* const kUploadColumnIdentifier = @"Upload";
 static NSString* const kEtaColumnIdentifier = @"ETA";
 static NSString* const kPeersColumnIdentifier = @"Peers";
+static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableColumns.v2";
 
 @interface TorrentTableTextCell : NSTableCellView
 - (instancetype)initWithIdentifier:(NSUserInterfaceItemIdentifier)identifier alignment:(NSTextAlignment)alignment;
@@ -214,17 +215,27 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
 
 - (void)configureDetailedColumns
 {
+    // Build the complete set before restoring its layout. The first Plus build
+    // assigned the autosave name too early, which allowed Cocoa to restore old
+    // dynamic columns and then append a second copy of them.
+    self.autosaveTableColumns = NO;
+    self.autosaveName = nil;
+
     NSTableColumn* nameColumn = [self tableColumnWithIdentifier:@"Torrent"];
+    if (nameColumn == nil)
+    {
+        nameColumn = [self tableColumnWithIdentifier:kNameColumnIdentifier];
+    }
+
     nameColumn.identifier = kNameColumnIdentifier;
     nameColumn.title = NSLocalizedString(@"Name", "Torrent table -> column title");
     nameColumn.width = 290.0;
     nameColumn.minWidth = 180.0;
     nameColumn.maxWidth = 600.0;
+    nameColumn.headerCell.alignment = NSTextAlignmentLeft;
 
     self.allowsColumnReordering = YES;
     self.allowsColumnResizing = YES;
-    self.autosaveTableColumns = YES;
-    self.autosaveName = @"TransmissionPlusTableColumns";
     self.enclosingScrollView.hasHorizontalScroller = YES;
 
     NSArray<NSDictionary*>* columns = @[
@@ -238,14 +249,24 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
 
     for (NSDictionary* configuration in columns)
     {
-        NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:configuration[@"id"]];
+        NSTableColumn* column = [self tableColumnWithIdentifier:configuration[@"id"]];
+        if (column == nil)
+        {
+            column = [[NSTableColumn alloc] initWithIdentifier:configuration[@"id"]];
+            [self addTableColumn:column];
+        }
+
         column.title = configuration[@"title"];
         column.width = [configuration[@"width"] doubleValue];
         column.minWidth = [configuration[@"min"] doubleValue];
         column.maxWidth = 240.0;
         column.headerCell.alignment = NSTextAlignmentCenter;
-        [self addTableColumn:column];
     }
+
+    // Versioned so the broken pre-release layout is never restored. From this
+    // point forward, dragging a visible header saves the order and widths.
+    self.autosaveName = kDetailedColumnsAutosaveName;
+    self.autosaveTableColumns = YES;
 }
 
 - (void)updatePresentationMode
@@ -258,6 +279,7 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
     }
 
     self.headerView.hidden = compact;
+    self.headerView.needsDisplay = YES;
     self.enclosingScrollView.hasHorizontalScroller = !compact;
 }
 
@@ -757,7 +779,7 @@ static NSString* const kPeersColumnIdentifier = @"Peers";
     {
         if (!item || [item isKindOfClass:[Torrent class]])
         {
-            [self.fController showInfo:nil];
+            [self.fController showFilesForSelectedTorrent:nil];
         }
         else
         {
