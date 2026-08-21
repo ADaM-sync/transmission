@@ -37,7 +37,7 @@ static NSString* const kDownloadColumnIdentifier = @"Download";
 static NSString* const kUploadColumnIdentifier = @"Upload";
 static NSString* const kEtaColumnIdentifier = @"ETA";
 static NSString* const kPeersColumnIdentifier = @"Peers";
-static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableColumns.v2";
+static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableColumns.v3";
 
 @interface TorrentTableTextCell : NSTableCellView
 - (instancetype)initWithIdentifier:(NSUserInterfaceItemIdentifier)identifier alignment:(NSTextAlignment)alignment;
@@ -233,10 +233,20 @@ static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableCol
     nameColumn.minWidth = 180.0;
     nameColumn.maxWidth = 600.0;
     nameColumn.headerCell.alignment = NSTextAlignmentLeft;
+    nameColumn.resizingMask = NSTableColumnUserResizingMask;
 
     self.allowsColumnReordering = YES;
     self.allowsColumnResizing = YES;
+    self.columnAutoresizingStyle = NSTableViewNoColumnAutoresizing;
     self.enclosingScrollView.hasHorizontalScroller = YES;
+
+    // The original main window did not include a header view. Without visible
+    // headers, columns cannot be dragged even when reordering is enabled.
+    if (self.headerView == nil)
+    {
+        self.headerView = [[NSTableHeaderView alloc] initWithFrame:NSMakeRect(0.0, 0.0, NSWidth(self.bounds), 24.0)];
+    }
+    self.enclosingScrollView.headerView = self.headerView;
 
     NSArray<NSDictionary*>* columns = @[
         @{ @"id" : kProgressColumnIdentifier, @"title" : NSLocalizedString(@"Progress", "Torrent table -> column title"), @"width" : @165.0, @"min" : @120.0 },
@@ -260,6 +270,7 @@ static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableCol
         column.width = [configuration[@"width"] doubleValue];
         column.minWidth = [configuration[@"min"] doubleValue];
         column.maxWidth = 240.0;
+        column.resizingMask = NSTableColumnUserResizingMask;
         column.headerCell.alignment = NSTextAlignmentCenter;
     }
 
@@ -766,6 +777,7 @@ static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableCol
 {
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
     NSInteger const row = [self rowAtPoint:point];
+    NSInteger const column = [self columnAtPoint:point];
 
     [super mouseDown:event];
 
@@ -775,11 +787,21 @@ static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableCol
         item = [self itemAtRow:row];
     }
 
-    if (event.clickCount == 2) //double click
+    if (event.clickCount == 1 && [item isKindOfClass:[Torrent class]] && column == [self columnWithIdentifier:kNameColumnIdentifier])
+    {
+        // Clicking the leading folder icon opens this torrent's expandable
+        // file tree directly underneath the transfer list.
+        NSRect const cellRect = [self frameOfCellAtColumn:column row:row];
+        if (point.x <= NSMinX(cellRect) + 72.0)
+        {
+            [self.fController showInlineFilesForSelectedTorrent:nil];
+        }
+    }
+    else if (event.clickCount == 2) //double click
     {
         if (!item || [item isKindOfClass:[Torrent class]])
         {
-            [self.fController showFilesForSelectedTorrent:nil];
+            [self.fController showInlineFilesForSelectedTorrent:nil];
         }
         else
         {

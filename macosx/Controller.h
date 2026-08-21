@@ -97,6 +97,7 @@ typedef NS_ENUM(NSUInteger, AddType) { //
 
 - (IBAction)showInfo:(id)sender;
 - (IBAction)showFilesForSelectedTorrent:(id)sender;
+- (IBAction)showInlineFilesForSelectedTorrent:(id)sender;
 - (void)resetInfo;
 - (IBAction)setInfoTab:(id)sender;
 

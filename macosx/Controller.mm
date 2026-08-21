@@ -34,6 +34,7 @@
 #import "CreatorWindowController.h"
 #import "StatsWindowController.h"
 #import "InfoWindowController.h"
+#import "InfoFileViewController.h"
 #import "PrefsController.h"
 #import "GroupsController.h"
 #import "AboutWindowController.h"
@@ -67,6 +68,9 @@ typedef NSString* ToolbarItemIdentifier NS_TYPED_EXTENSIBLE_ENUM;
 static ToolbarItemIdentifier const ToolbarItemIdentifierCreate = @"Toolbar Create";
 static ToolbarItemIdentifier const ToolbarItemIdentifierOpenFile = @"Toolbar Open";
 static ToolbarItemIdentifier const ToolbarItemIdentifierOpenWeb = @"Toolbar Open Web";
+static ToolbarItemIdentifier const ToolbarItemIdentifierAppearance = @"Toolbar Transmission Plus Appearance";
+static ToolbarItemIdentifier const ToolbarItemIdentifierFiles = @"Toolbar Transmission Plus Files";
+static ToolbarItemIdentifier const ToolbarItemIdentifierPlus = @"Toolbar Transmission Plus";
 static ToolbarItemIdentifier const ToolbarItemIdentifierRemove = @"Toolbar Remove";
 static ToolbarItemIdentifier const ToolbarItemIdentifierInfo = @"Toolbar Info";
 static ToolbarItemIdentifier const ToolbarItemIdentifierPauseAll = @"Toolbar Pause All";
@@ -437,14 +441,24 @@ static void removeKeRangerRansomware()
 @property(nonatomic) NSMutableSet<NSWindowController*>* fAddWindows;
 @property(nonatomic) URLSheetWindowController* fUrlSheetController;
 
+@property(nonatomic) InfoFileViewController* fInlineFilesController;
+@property(nonatomic) NSVisualEffectView* fInlineFilesContainer;
+@property(nonatomic) NSLayoutConstraint* fInlineFilesHeightConstraint;
+@property(nonatomic) NSArray<NSLayoutConstraint*>* fInlineFilesContentConstraints;
+@property(nonatomic) NSTextField* fInlineFilesTitle;
+@property(nonatomic, weak) Torrent* fInlineFilesTorrent;
+
 @property(nonatomic) BOOL fGlobalPopoverShown;
 @property(nonatomic) NSView* fPositioningView;
 @property(nonatomic) BOOL fSoundPlaying;
 
 - (void)removeTorrentsImpl:(NSArray<Torrent*>*)torrents deleteData:(BOOL)deleteData;
 - (void)configureTransmissionPlusMenu;
+- (void)configureInlineFilesPanel;
 - (void)applyTransmissionPlusAppearance;
 - (void)updateTransmissionPlusAppearanceMenu:(NSMenu*)menu;
+- (void)updateTransmissionPlusAppearanceToolbarItem:(NSToolbarItem*)toolbarItem;
+- (void)hideInlineFiles;
 
 @end
 
@@ -633,10 +647,9 @@ static void removeKeRangerRansomware()
 {
     [super awakeFromNib];
 
-    [self configureTransmissionPlusMenu];
     [self applyTransmissionPlusAppearance];
 
-    Toolbar* toolbar = [[Toolbar alloc] initWithIdentifier:@"TRMainToolbar"];
+    Toolbar* toolbar = [[Toolbar alloc] initWithIdentifier:@"TransmissionPlusToolbar.v3"];
     toolbar.delegate = self;
     toolbar.allowsUserCustomization = YES;
     toolbar.autosavesConfiguration = YES;
@@ -646,6 +659,9 @@ static void removeKeRangerRansomware()
     self.fWindow.toolbarStyle = NSWindowToolbarStyleUnified;
     self.fWindow.titleVisibility = NSWindowTitleHidden;
     self.fWindow.contentMinSize = NSMakeSize(760.0, 260.0);
+
+    [self configureTransmissionPlusMenu];
+    [self configureInlineFilesPanel];
 
     // Keep progress, rates, ETA, and peer information visible together.
     if (NSWidth(self.fWindow.frame) < 900.0)
@@ -1054,6 +1070,103 @@ static void removeKeRangerRansomware()
     [self updateTransmissionPlusAppearanceMenu:appearanceMenu];
 }
 
+- (void)configureInlineFilesPanel
+{
+    NSView* contentView = self.fWindow.contentView;
+    NSScrollView* tableScrollView = self.fTableView.enclosingScrollView;
+    NSView* bottomBar = nil;
+    for (NSView* view in contentView.subviews)
+    {
+        if (view != tableScrollView)
+        {
+            bottomBar = view;
+            break;
+        }
+    }
+
+    if (bottomBar == nil)
+    {
+        return;
+    }
+
+    // Insert the panel between the transfer table and Transmission's existing
+    // bottom bar. This makes files part of the main window instead of a second
+    // inspector window.
+    for (NSLayoutConstraint* constraint in contentView.constraints)
+    {
+        BOOL const connectsTableToBottomBar =
+            (constraint.firstItem == bottomBar && constraint.firstAttribute == NSLayoutAttributeTop &&
+             constraint.secondItem == tableScrollView && constraint.secondAttribute == NSLayoutAttributeBottom) ||
+            (constraint.firstItem == tableScrollView && constraint.firstAttribute == NSLayoutAttributeBottom &&
+             constraint.secondItem == bottomBar && constraint.secondAttribute == NSLayoutAttributeTop);
+        if (connectsTableToBottomBar)
+        {
+            constraint.active = NO;
+        }
+    }
+
+    NSVisualEffectView* container = [[NSVisualEffectView alloc] initWithFrame:NSZeroRect];
+    container.translatesAutoresizingMaskIntoConstraints = NO;
+    container.material = NSVisualEffectMaterialSidebar;
+    container.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+    container.state = NSVisualEffectStateActive;
+    container.hidden = YES;
+    [contentView addSubview:container];
+    self.fInlineFilesContainer = container;
+
+    NSTextField* title = [NSTextField labelWithString:@"Files — select a transfer, then click folders or arrows to expand"];
+    title.translatesAutoresizingMaskIntoConstraints = NO;
+    title.font = [NSFont systemFontOfSize:NSFont.smallSystemFontSize weight:NSFontWeightSemibold];
+    title.lineBreakMode = NSLineBreakByTruncatingMiddle;
+    [container addSubview:title];
+    self.fInlineFilesTitle = title;
+
+    NSButton* collapseButton = [NSButton buttonWithImage:[NSImage imageWithSystemSymbolName:@"chevron.down.circle" accessibilityDescription:nil]
+                                                   target:self
+                                                   action:@selector(hideInlineFiles:)];
+    collapseButton.translatesAutoresizingMaskIntoConstraints = NO;
+    collapseButton.bezelStyle = NSBezelStyleTexturedRounded;
+    collapseButton.toolTip = @"Hide files";
+    [container addSubview:collapseButton];
+
+    NSBox* separator = [[NSBox alloc] initWithFrame:NSZeroRect];
+    separator.translatesAutoresizingMaskIntoConstraints = NO;
+    separator.boxType = NSBoxSeparator;
+    [container addSubview:separator];
+
+    self.fInlineFilesController = [[InfoFileViewController alloc] init];
+    NSView* filesView = self.fInlineFilesController.view;
+    filesView.translatesAutoresizingMaskIntoConstraints = NO;
+    filesView.hidden = YES;
+    [container addSubview:filesView];
+
+    self.fInlineFilesHeightConstraint = [container.heightAnchor constraintEqualToConstant:0.0];
+    self.fInlineFilesHeightConstraint.active = YES;
+
+    self.fInlineFilesContentConstraints = @[
+        [filesView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [filesView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [filesView.topAnchor constraintEqualToAnchor:separator.bottomAnchor],
+        [filesView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor]
+    ];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [container.leadingAnchor constraintEqualToAnchor:contentView.leadingAnchor],
+        [container.trailingAnchor constraintEqualToAnchor:contentView.trailingAnchor],
+        [container.bottomAnchor constraintEqualToAnchor:bottomBar.topAnchor],
+        [tableScrollView.bottomAnchor constraintEqualToAnchor:container.topAnchor],
+        [title.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:12.0],
+        [title.centerYAnchor constraintEqualToAnchor:collapseButton.centerYAnchor],
+        [collapseButton.topAnchor constraintEqualToAnchor:container.topAnchor constant:4.0],
+        [collapseButton.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-8.0],
+        [collapseButton.widthAnchor constraintEqualToConstant:28.0],
+        [collapseButton.heightAnchor constraintEqualToConstant:28.0],
+        [separator.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [separator.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [separator.topAnchor constraintEqualToAnchor:collapseButton.bottomAnchor constant:3.0]
+    ]];
+}
+
 - (void)applyTransmissionPlusAppearance
 {
     NSString* const appearance = [self.fDefaults stringForKey:kTransmissionPlusAppearanceKey] ?: @"system";
@@ -1092,6 +1205,24 @@ static void removeKeRangerRansomware()
     [self.fDefaults setObject:sender.representedObject forKey:kTransmissionPlusAppearanceKey];
     [self applyTransmissionPlusAppearance];
     [self updateTransmissionPlusAppearanceMenu:sender.menu];
+    [self.fWindow.toolbar validateVisibleItems];
+}
+
+- (void)toggleTransmissionPlusAppearance:(id)sender
+{
+    NSString* const currentAppearance = [self.fDefaults stringForKey:kTransmissionPlusAppearanceKey] ?: @"system";
+    NSString* const nextAppearance = [currentAppearance isEqualToString:@"dark"] ? @"light" : @"dark";
+    [self.fDefaults setObject:nextAppearance forKey:kTransmissionPlusAppearanceKey];
+    [self applyTransmissionPlusAppearance];
+    [self.fWindow.toolbar validateVisibleItems];
+}
+
+- (void)updateTransmissionPlusAppearanceToolbarItem:(NSToolbarItem*)toolbarItem
+{
+    NSString* const appearance = [self.fDefaults stringForKey:kTransmissionPlusAppearanceKey] ?: @"system";
+    NSButton* button = (NSButton*)toolbarItem.view;
+    button.state = [appearance isEqualToString:@"dark"] ? NSControlStateValueOn : NSControlStateValueOff;
+    toolbarItem.toolTip = [appearance isEqualToString:@"dark"] ? @"Switch to light appearance" : @"Switch to dark appearance";
 }
 
 - (void)linkTransmissionPlusGitHub:(id)sender
@@ -2495,15 +2626,64 @@ static void removeKeRangerRansomware()
 
 - (void)showFilesForSelectedTorrent:(id)sender
 {
-    if (self.fTableView.selectedTorrents.count == 0)
+    [self showInlineFilesForSelectedTorrent:sender];
+}
+
+- (void)showInlineFilesForSelectedTorrent:(id)sender
+{
+    Torrent* torrent = self.fTableView.selectedTorrents.firstObject;
+    if (torrent == nil)
     {
         return;
     }
 
-    [self resetInfo];
-    [self.fInfoController showFilesTab];
-    [self.fInfoController updateInfoStats];
-    [self.fInfoController.window makeKeyAndOrderFront:nil];
+    self.fInlineFilesContainer.hidden = NO;
+    self.fInlineFilesHeightConstraint.constant = 260.0;
+    self.fInlineFilesTorrent = torrent;
+    self.fInlineFilesTitle.stringValue = [NSString stringWithFormat:@"Files — %@  ·  click folders or arrows to expand", torrent.name];
+
+    [self.fInlineFilesController setInfoForTorrents:@[ torrent ]];
+    [self.fInlineFilesController updateInfo];
+    self.fInlineFilesController.view.hidden = NO;
+    [NSLayoutConstraint activateConstraints:self.fInlineFilesContentConstraints];
+
+    [self updateForAutoSize];
+    [self.fWindow.toolbar validateVisibleItems];
+}
+
+- (void)toggleInlineFilesForSelectedTorrent:(id)sender
+{
+    Torrent* torrent = self.fTableView.selectedTorrents.firstObject;
+    if (torrent == nil)
+    {
+        return;
+    }
+
+    if (self.fInlineFilesHeightConstraint.constant > 0.0 && self.fInlineFilesTorrent == torrent)
+    {
+        [self hideInlineFiles];
+    }
+    else
+    {
+        [self showInlineFilesForSelectedTorrent:sender];
+    }
+}
+
+- (IBAction)hideInlineFiles:(id)sender
+{
+    [self hideInlineFiles];
+}
+
+- (void)hideInlineFiles
+{
+    [NSLayoutConstraint deactivateConstraints:self.fInlineFilesContentConstraints];
+    self.fInlineFilesHeightConstraint.constant = 0.0;
+    self.fInlineFilesController.view.hidden = YES;
+    self.fInlineFilesContainer.hidden = YES;
+    self.fInlineFilesTorrent = nil;
+
+    [self updateForAutoSize];
+    [self.fWindow.toolbar validateVisibleItems];
 }
 
 - (void)resetInfo
@@ -4062,6 +4242,19 @@ static void removeKeRangerRansomware()
 - (void)torrentTableViewSelectionDidChange:(NSNotification*)notification
 {
     [self resetInfo];
+
+    if (self.fInlineFilesHeightConstraint.constant > 0.0)
+    {
+        if (self.fTableView.selectedTorrents.count == 1)
+        {
+            [self showInlineFilesForSelectedTorrent:nil];
+        }
+        else
+        {
+            [self hideInlineFiles];
+        }
+    }
+
     [self.fWindow.toolbar validateVisibleItems];
 }
 
@@ -4439,13 +4632,53 @@ static void removeKeRangerRansomware()
     {
         ButtonToolbarItem* item = [self standardToolbarButtonWithIdentifier:ident];
 
-        item.label = NSLocalizedString(@"Open Address", "Open address toolbar item -> label");
-        item.paletteLabel = NSLocalizedString(@"Open Torrent Address", "Open address toolbar item -> palette label");
-        item.toolTip = NSLocalizedString(@"Open torrent web address", "Open address toolbar item -> tooltip");
-        item.image = [NSImage imageWithSystemSymbolName:@"globe" accessibilityDescription:nil];
+        item.label = @"Add URL";
+        item.paletteLabel = @"Add Torrent URL or Magnet Link";
+        item.toolTip = @"Add a torrent URL or magnet link";
+        item.image = [NSImage imageWithSystemSymbolName:@"link.badge.plus" accessibilityDescription:nil];
         item.target = self;
         item.action = @selector(openURLShowSheet:);
         item.autovalidates = NO;
+
+        return item;
+    }
+    else if ([ident isEqualToString:ToolbarItemIdentifierAppearance])
+    {
+        ButtonToolbarItem* item = [self standardToolbarButtonWithIdentifier:ident];
+        ((NSButtonCell*)((NSButton*)item.view).cell).showsStateBy = NSContentsCellMask;
+
+        item.label = @"Theme";
+        item.paletteLabel = @"Toggle Light / Dark Appearance";
+        item.image = [NSImage imageWithSystemSymbolName:@"circle.lefthalf.filled" accessibilityDescription:nil];
+        item.target = self;
+        item.action = @selector(toggleTransmissionPlusAppearance:);
+
+        return item;
+    }
+    else if ([ident isEqualToString:ToolbarItemIdentifierFiles])
+    {
+        ButtonToolbarItem* item = [self standardToolbarButtonWithIdentifier:ident];
+        ((NSButtonCell*)((NSButton*)item.view).cell).showsStateBy = NSContentsCellMask;
+
+        item.label = @"Files";
+        item.paletteLabel = @"Show Files in Main Window";
+        item.toolTip = @"Show or hide the selected transfer's files below the list";
+        item.image = [NSImage imageWithSystemSymbolName:@"folder.badge.gearshape" accessibilityDescription:nil];
+        item.target = self;
+        item.action = @selector(toggleInlineFilesForSelectedTorrent:);
+
+        return item;
+    }
+    else if ([ident isEqualToString:ToolbarItemIdentifierPlus])
+    {
+        ButtonToolbarItem* item = [self standardToolbarButtonWithIdentifier:ident];
+
+        item.label = @"Plus";
+        item.paletteLabel = @"Transmission Plus Features";
+        item.toolTip = @"Show what's new in Transmission Plus";
+        item.image = [NSImage imageWithSystemSymbolName:@"sparkles" accessibilityDescription:nil];
+        item.target = self;
+        item.action = @selector(showTransmissionPlusFeatures:);
 
         return item;
     }
@@ -4655,6 +4888,9 @@ static void removeKeRangerRansomware()
         ToolbarItemIdentifierCreate,
         ToolbarItemIdentifierOpenFile,
         ToolbarItemIdentifierOpenWeb,
+        ToolbarItemIdentifierAppearance,
+        ToolbarItemIdentifierFiles,
+        ToolbarItemIdentifierPlus,
         ToolbarItemIdentifierRemove,
         ToolbarItemIdentifierPauseResumeSelected,
         ToolbarItemIdentifierPauseResumeAll,
@@ -4672,6 +4908,10 @@ static void removeKeRangerRansomware()
     return @[
         ToolbarItemIdentifierCreate,
         ToolbarItemIdentifierOpenFile,
+        ToolbarItemIdentifierOpenWeb,
+        ToolbarItemIdentifierAppearance,
+        ToolbarItemIdentifierFiles,
+        ToolbarItemIdentifierPlus,
         ToolbarItemIdentifierRemove,
         NSToolbarSpaceItemIdentifier,
         ToolbarItemIdentifierPauseResumeAll,
@@ -4752,6 +4992,20 @@ static void removeKeRangerRansomware()
         return YES;
     }
 
+    if ([ident isEqualToString:ToolbarItemIdentifierAppearance])
+    {
+        [self updateTransmissionPlusAppearanceToolbarItem:toolbarItem];
+        return YES;
+    }
+
+    if ([ident isEqualToString:ToolbarItemIdentifierFiles])
+    {
+        BOOL const visibleForSelectedTorrent = self.fInlineFilesHeightConstraint.constant > 0.0 &&
+            self.fInlineFilesTorrent == self.fTableView.selectedTorrents.firstObject;
+        ((NSButton*)toolbarItem.view).state = visibleForSelectedTorrent ? NSControlStateValueOn : NSControlStateValueOff;
+        return self.fTableView.selectedTorrents.count == 1;
+    }
+
     //set filter item
     if ([ident isEqualToString:ToolbarItemIdentifierFilter])
     {
@@ -4797,6 +5051,9 @@ static void removeKeRangerRansomware()
 
     if (action == @selector(showFilesForSelectedTorrent:))
     {
+        BOOL const visibleForSelectedTorrent = self.fInlineFilesHeightConstraint.constant > 0.0 &&
+            self.fInlineFilesTorrent == self.fTableView.selectedTorrents.firstObject;
+        menuItem.title = visibleForSelectedTorrent ? @"Hide Selected Transfer Files" : @"Show Selected Transfer Files";
         return canUseTable && self.fTableView.selectedTorrents.count == 1;
     }
 
@@ -5470,6 +5727,8 @@ static void removeKeRangerRansomware()
 - (CGFloat)mainWindowComponentHeight
 {
     CGFloat height = kBottomBarHeight;
+
+    height += self.fInlineFilesHeightConstraint.constant;
 
     if (self.fStatusBar != nil && !self.fStatusBar.isHidden)
     {
