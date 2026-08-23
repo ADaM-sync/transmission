@@ -544,6 +544,12 @@
                                     <action selector="linkDonate:" target="206" id="3213"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Donate to Adam A…" id="transmission-plus-donate">
+                                <imageReference key="secondaryImage" image="heart" catalog="system" symbolScale="default" variableValue="1"/>
+                                <connections>
+                                    <action selector="linkTransmissionPlusSupport:" target="206" id="transmission-plus-donate-action"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="196">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
