@@ -118,6 +118,20 @@ typedef NS_ENUM(NSUInteger, FilePriorityMenuTag) { //
     [super awakeFromNib];
     self.fFileList = [[NSMutableArray alloc] init];
 
+    // Keep the inline files panel useful even when a user has an older saved interface layout.
+    // The column is also declared in InfoFileView.xib, but creating it here is a safe fallback.
+    if ([self.fOutline tableColumnWithIdentifier:@"Progress"] == nil)
+    {
+        NSTableColumn* progressColumn = [[NSTableColumn alloc] initWithIdentifier:@"Progress"];
+        progressColumn.title = NSLocalizedString(@"Progress", "file table -> column title");
+        progressColumn.width = 220.0;
+        progressColumn.minWidth = 150.0;
+        progressColumn.resizingMask = NSTableColumnUserResizingMask;
+        progressColumn.headerCell.alignment = NSTextAlignmentCenter;
+        [self.fOutline addTableColumn:progressColumn];
+        [self.fOutline moveColumn:self.fOutline.numberOfColumns - 1 toColumn:1];
+    }
+
     //set table header tool tips
     [self.fOutline tableColumnWithIdentifier:@"Check"].headerToolTip = NSLocalizedString(@"Download", "file table -> header tool tip");
     [self.fOutline tableColumnWithIdentifier:@"Priority"].headerToolTip = NSLocalizedString(@"Priority", "file table -> header tool tip");
