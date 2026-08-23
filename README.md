@@ -1,101 +1,58 @@
-## About
+<p align="center">
+  <img src="assets/transmission-plus-icon.png" width="160" alt="Transmission Plus app icon">
+</p>
 
-Transmission is a fast, easy, and free BitTorrent client. It comes in several flavors:
-  * A native macOS GUI application
-  * GTK+ and Qt GUI applications for Linux, BSD, etc.
-  * A Qt-based Windows-compatible GUI application
-  * A headless daemon for servers and routers
-  * A web UI for remote controlling any of the above
-  
-Visit https://transmissionbt.com/ for more information.
+<h1 align="center">Transmission Plus</h1>
 
-## Documentation
+<p align="center">
+  A refreshed macOS experience for <a href="https://github.com/transmission/transmission">Transmission</a>.<br>
+  Clear progress, quick file access, and a focused light or dark interface.
+</p>
 
-[Transmission's documentation](docs/README.md) is currently out-of-date, but the team has recently begun a new project to update it and is looking for volunteers. If you're interested, please feel free to submit pull requests!
+<p align="center">
+  <a href="https://github.com/ADaM-sync/transmission/actions/runs/32644919344/artifacts/9494683875"><strong>Download the current macOS build</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/sponsors/ADaM-sync">Support Adam A</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/ADaM-sync/transmission">Star the project</a>
+</p>
 
-## Command line interface notes
+> [!IMPORTANT]
+> Transmission Plus is an independent, unofficial modification of Transmission for macOS. The current build is unsigned, so macOS may ask you to approve it the first time it opens.
 
-Transmission is fully supported in transmission-remote, the preferred cli client.
+## Highlights
 
-Three standalone tools to examine, create, and edit .torrent files exist: transmission-show, transmission-create, and transmission-edit, respectively.
+- **Progress you can read at a glance** — clear percentage bars in the transfer list, with download and upload speeds, ETA, and seeds or peers alongside them.
+- **Inline file browser** — click a transfer or folder to expand its nested files directly below the list; no separate inspector window required.
+- **Per-file progress** — every nested file has its own matching progress bar and percentage, so it is easy to see what is still downloading.
+- **Cleaner control** — reorder transfer columns, add a torrent from a file or URL, filter files, and change download priority without leaving the main window.
+- **Light, dark, or system appearance** — switch from the toolbar or the **Transmission Plus → Appearance** menu.
+- **A proper Plus menu** — quick access to the file panel, feature notes, Adam A’s GitHub page, and the donation links.
 
-Prior to development of transmission-remote, the standalone client transmission-cli was created. Limited to a single torrent at a time, transmission-cli is deprecated and exists primarily to support older hardware dependent upon it. In almost all instances, transmission-remote should be used instead.
+## In action
 
-Different distributions may choose to package any or all of these tools in one or more separate packages.
+<p align="center">
+  <img src="assets/screenshots/inline-file-progress-dark.png" alt="Transmission Plus in dark mode with per-file progress" width="900">
+</p>
 
-## Building
+<p align="center">
+  <img src="assets/screenshots/light-mode-inline-files.png" alt="Transmission Plus in light mode with the inline file panel" width="900">
+</p>
 
-Transmission has an Xcode project file (Transmission.xcodeproj) for building in Xcode.
+## Install the current build
 
-For a more detailed description, and dependencies, visit [How to Build Transmission](docs/Building-Transmission.md) in docs
+1. Download and extract the **Transmission-Plus-DMG** ZIP from the link above.
+2. Open the DMG and drag **Transmission Plus.app** to Applications.
+3. If macOS blocks the first launch, Control-click the app, choose **Open**, then confirm. You may need to restart once after approving it.
 
-### Building a Transmission release from the command line
+The Actions download is for testing and can expire. A permanent release download will be added once the project is ready for a signed release.
 
-```bash
-$ tar xf transmission-4.1.0.tar.xz
-$ cd transmission-4.1.0
-# Use -DCMAKE_BUILD_TYPE=RelWithDebInfo to build optimized binary with debug information. (preferred)
-# Use -DCMAKE_BUILD_TYPE=Release to build full optimized binary.
-$ cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
-$ cd build
-$ cmake --build .
-$ sudo cmake --install .
-```
+## Support
 
-### Building Transmission from the nightly builds
+Transmission Plus is free to use. If the work saves you time, you can support Adam A through [GitHub Sponsors](https://github.com/sponsors/ADaM-sync). If you like the project, a GitHub star helps other macOS users find it.
 
-Download a tarball from https://build.transmissionbt.com/job/trunk-linux/ and follow the steps from the previous section.
+## About the original project
 
-If you're new to building programs from source code, this is typically easier than building from Git.
+Transmission Plus builds on the excellent [Transmission](https://transmissionbt.com/) BitTorrent client, which is MIT licensed. This fork keeps Transmission’s torrent engine while refining the macOS interface; it is not affiliated with or endorsed by the Transmission project.
 
-### Building Transmission from Git (first time)
-
-```bash
-$ git clone --recurse-submodules https://github.com/transmission/transmission Transmission
-$ cd Transmission
-# Use -DCMAKE_BUILD_TYPE=RelWithDebInfo to build optimized binary with debug information. (preferred)
-# Use -DCMAKE_BUILD_TYPE=Release to build full optimized binary.
-$ cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
-$ cd build
-$ cmake --build .
-$ sudo cmake --install .
-```
-
-### Building Transmission from Git (updating)
-
-```bash
-$ cd Transmission/build
-$ cmake --build . -t clean
-$ git submodule foreach --recursive git clean -xfd
-$ git pull --rebase --prune
-$ git submodule update --init --recursive
-$ cmake --build .
-$ sudo cmake --install .
-```
-
-## Contributing
-
-### Code Style
-
-You would want to setup your editor to make use of the .clang-format file located in the root of this repository and the eslint/prettier rules in web/package.json.
-
-If for some reason you are unwilling or unable to do so, there is a shell script which you can use: `./code_style.sh`
-
-### Translations
-
-See [language translations](docs/Translating.md).
-
-## Sponsors
-
-<table>
- <tbody>
-  <tr>
-   <td align="center"><img alt="[MacStadium]" src="https://uploads-ssl.webflow.com/5ac3c046c82724970fc60918/5c019d917bba312af7553b49_MacStadium-developerlogo.png" height="30"/></td>
-   <td>macOS CI builds are running on a M1 Mac Mini provided by <a href="https://www.macstadium.com/company/opensource">MacStadium</a></td>
-  </tr>
-  <tr>
-   <td align="center"><img alt="[SignPath]" src="https://avatars.githubusercontent.com/u/34448643" height="30"/></td>
-   <td>Free code signing on Windows provided by <a href="https://signpath.io/?utm_source=foundation&utm_medium=github&utm_campaign=transmission">SignPath.io</a>, certificate by <a href="https://signpath.org/?utm_source=foundation&utm_medium=github&utm_campaign=transmission">SignPath Foundation</a></td>
-  </tr>
- </tbody>
-</table>
+For the original project’s development and build documentation, see [Transmission’s documentation](docs/README.md).
