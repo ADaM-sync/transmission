@@ -57,13 +57,19 @@ static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableCol
         field.alignment = alignment;
         field.lineBreakMode = NSLineBreakByTruncatingTail;
         field.font = [NSFont systemFontOfSize:NSFont.smallSystemFontSize];
-        field.textColor = NSColor.secondaryLabelColor;
+        field.textColor = NSColor.labelColor;
 
         self.textField = field;
         [self addSubview:field];
     }
 
     return self;
+}
+
+- (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle
+{
+    [super setBackgroundStyle:backgroundStyle];
+    self.textField.textColor = backgroundStyle == NSBackgroundStyleEmphasized ? NSColor.whiteColor : NSColor.labelColor;
 }
 
 @end
@@ -104,6 +110,8 @@ static NSString* const kDetailedColumnsAutosaveName = @"TransmissionPlusTableCol
     NSDictionary* attributes = @{
         NSFontAttributeName : [NSFont boldSystemFontOfSize:11.0],
         NSForegroundColorAttributeName : NSColor.whiteColor,
+        NSStrokeColorAttributeName : [NSColor colorWithWhite:0.0 alpha:0.62],
+        NSStrokeWidthAttributeName : @(-1.4),
         NSParagraphStyleAttributeName : paragraph,
         NSShadowAttributeName : shadow
     };

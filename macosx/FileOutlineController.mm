@@ -12,8 +12,83 @@
 #import "FileRenameSheetController.h"
 #import "NSMutableArrayAdditions.h"
 #import "NSStringAdditions.h"
+#import "ProgressGradients.h"
 
 static CGFloat const kRowSmallHeight = 18.0;
+
+@interface FileProgressCellView : NSTableCellView
+@property(nonatomic, weak) FileListNode* node;
+@end
+
+@implementation FileProgressCellView
+
+- (BOOL)isFlipped
+{
+    return YES;
+}
+
+- (void)setNode:(FileListNode*)node
+{
+    _node = node;
+    self.toolTip = node ? [NSString percentString:[node.torrent fileProgress:node] longDecimals:YES] : nil;
+    self.needsDisplay = YES;
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+    [super drawRect:dirtyRect];
+
+    if (self.node == nil)
+    {
+        return;
+    }
+
+    Torrent* torrent = self.node.torrent;
+    CGFloat const progress = MIN(MAX([torrent fileProgress:self.node], 0.0), 1.0);
+    NSRect const barRect = NSInsetRect(self.bounds, 5.0, MAX(4.0, floor((NSHeight(self.bounds) - 16.0) * 0.5)));
+
+    NSRect completeRect, remainingRect;
+    NSDivideRect(barRect, &completeRect, &remainingRect, round(progress * NSWidth(barRect)), NSMinXEdge);
+
+    if (!NSIsEmptyRect(completeRect))
+    {
+        if (progress >= 1.0)
+        {
+            [ProgressGradients.progressGreenGradient drawInRect:completeRect angle:90];
+        }
+        else if (torrent.active)
+        {
+            [ProgressGradients.progressBlueGradient drawInRect:completeRect angle:90];
+        }
+        else
+        {
+            [ProgressGradients.progressGrayGradient drawInRect:completeRect angle:90];
+        }
+    }
+    if (!NSIsEmptyRect(remainingRect))
+    {
+        [ProgressGradients.progressWhiteGradient drawInRect:remainingRect angle:90];
+    }
+
+    [[NSColor colorWithWhite:0.0 alpha:0.22] set];
+    [NSBezierPath strokeRect:NSInsetRect(barRect, 0.5, 0.5)];
+
+    NSString* percent = [NSString percentString:progress longDecimals:YES];
+    NSMutableParagraphStyle* paragraph = [[NSMutableParagraphStyle alloc] init];
+    paragraph.alignment = NSTextAlignmentCenter;
+    NSDictionary* attributes = @{
+        NSFontAttributeName : [NSFont boldSystemFontOfSize:10.0],
+        NSForegroundColorAttributeName : NSColor.whiteColor,
+        NSStrokeColorAttributeName : [NSColor colorWithWhite:0.0 alpha:0.62],
+        NSStrokeWidthAttributeName : @(-1.2),
+        NSParagraphStyleAttributeName : paragraph
+    };
+    [percent drawWithRect:NSInsetRect(barRect, 4.0, 1.0)
+                  options:NSStringDrawingUsesLineFragmentOrigin
+               attributes:attributes];
+}
+
+@end
 
 typedef NS_ENUM(NSUInteger, FileCheckMenuTag) { //
     FileCheckMenuTagCheck,
@@ -267,6 +342,17 @@ typedef NS_ENUM(NSUInteger, FilePriorityMenuTag) { //
         }
         cellView.node = node;
 
+        return cellView;
+    }
+    else if ([identifier isEqualToString:@"Progress"])
+    {
+        FileProgressCellView* cellView = [outlineView makeViewWithIdentifier:@"FileProgressCell" owner:self];
+        if (!cellView)
+        {
+            cellView = [[FileProgressCellView alloc] initWithFrame:NSZeroRect];
+            cellView.identifier = @"FileProgressCell";
+        }
+        cellView.node = node;
         return cellView;
     }
     else if ([identifier isEqualToString:@"Check"])

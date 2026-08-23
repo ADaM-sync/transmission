@@ -1023,7 +1023,7 @@ static void removeKeRangerRansomware()
     }
     [mainMenu insertItem:plusMenuItem atIndex:insertIndex];
 
-    NSMenuItem* creditItem = [[NSMenuItem alloc] initWithTitle:@"Skinned by Adam A" action:nil keyEquivalent:@""];
+    NSMenuItem* creditItem = [[NSMenuItem alloc] initWithTitle:@"Modified Transmission" action:nil keyEquivalent:@""];
     creditItem.enabled = NO;
     [plusMenu addItem:creditItem];
 
@@ -1239,11 +1239,11 @@ static void removeKeRangerRansomware()
 {
     NSAlert* alert = [[NSAlert alloc] init];
     alert.messageText = @"Transmission Plus";
-    alert.informativeText = @"Skinned by Adam A\n\n"
+    alert.informativeText = @"Modified Transmission build\n\n"
                             @"• A clean, reorderable transfer dashboard\n"
                             @"• Progress, status, speed, ETA, and peers at a glance\n"
                             @"• Light, dark, and system appearance choices\n"
-                            @"• Open a transfer’s nested file list with one action";
+                            @"• Inline nested files with their own progress bars";
     [alert addButtonWithTitle:@"OK"];
     [alert runModal];
 }
