@@ -5,16 +5,17 @@
 <h1 align="center">Transmission Plus</h1>
 
 <p align="center">
-  A refreshed macOS experience for <a href="https://github.com/transmission/transmission">Transmission</a>.<br>
+  <strong>A better Transmission client for macOS.</strong><br>
+  A refreshed experience for <a href="https://github.com/transmission/transmission">Transmission</a>.<br>
   Clear progress, quick file access, and a focused light or dark interface.
 </p>
 
 <p align="center">
-  <a href="https://github.com/ADaM-sync/transmission/actions/runs/32644919344/artifacts/9494683875"><strong>Download the current macOS build</strong></a>
+  <a href="https://github.com/ADaM-sync/transmission-plus/releases/latest"><strong>Download Transmission Plus</strong></a>
   &nbsp;·&nbsp;
   <a href="https://github.com/sponsors/ADaM-sync">Support Adam A</a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/ADaM-sync/transmission">Star the project</a>
+  <a href="https://github.com/ADaM-sync/transmission-plus">Star the project</a>
 </p>
 
 > [!IMPORTANT]
@@ -39,13 +40,13 @@
   <img src="assets/screenshots/light-mode-inline-files.png" alt="Transmission Plus in light mode with the inline file panel" width="900">
 </p>
 
-## Install the current build
+## Install
 
-1. Download and extract the **Transmission-Plus-DMG** ZIP from the link above.
-2. Open the DMG and drag **Transmission Plus.app** to Applications.
-3. If macOS blocks the first launch, Control-click the app, choose **Open**, then confirm. You may need to restart once after approving it.
+1. Download **Transmission-Plus.dmg** from the link above.
+2. Open it and drag **Transmission Plus.app** to Applications.
+3. If macOS blocks the first launch, Control-click the app, choose **Open**, then confirm.
 
-The Actions download is for testing and can expire. A permanent release download will be added once the project is ready for a signed release.
+The release build is unsigned, so macOS may ask you to approve the first launch.
 
 ## Support
 
