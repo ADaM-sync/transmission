@@ -54,7 +54,7 @@ The release build is unsigned, so macOS may ask you to approve the first launch.
 
 ## Support
 
-Transmission Plus is free to use. If the work saves you time, you can support Adam A through [GitHub Sponsors](https://github.com/sponsors/ADaM-sync). If you like the project, a GitHub star helps other macOS users find it.
+Transmission Plus is free to use. If the work saves you time, you can support through [GitHub Sponsors](https://github.com/sponsors/ADaM-sync). If you like the project, a GitHub star helps other macOS users find it.
 
 <a href="https://buymeacoffee.com/adamsync" target="_blank">
   <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" style="height: 60px; width: 217px;">
