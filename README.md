@@ -13,10 +13,14 @@
 <p align="center">
   <a href="https://github.com/ADaM-sync/transmission-plus/releases/latest"><strong>Download Transmission Plus</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://buymeacoffee.com/adamsync">Buy Me a Coffee</a>
+  <a href="https://buymeacoffee.com/adamsync">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="30">
+  </a>
   &nbsp;·&nbsp;
   <a href="https://github.com/ADaM-sync/transmission-plus">Star the project</a>
 </p>
+
+
 
 > [!IMPORTANT]
 > Transmission Plus is an independent, unofficial modification of Transmission for macOS. The current build is unsigned, so macOS may ask you to approve it the first time it opens.
