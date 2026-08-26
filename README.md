@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/ADaM-sync/transmission-plus/releases/latest"><strong>Download Transmission Plus</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/sponsors/ADaM-sync">Support Adam A</a>
+  <a href="https://buymeacoffee.com/adamsync">Buy Me a Coffee</a>
   &nbsp;·&nbsp;
   <a href="https://github.com/ADaM-sync/transmission-plus">Star the project</a>
 </p>
@@ -28,7 +28,7 @@
 - **Per-file progress** — every nested file has its own matching progress bar and percentage, so it is easy to see what is still downloading.
 - **Cleaner control** — reorder transfer columns, add a torrent from a file or URL, filter files, and change download priority without leaving the main window.
 - **Light, dark, or system appearance** — switch from the toolbar or the **Transmission Plus → Appearance** menu.
-- **A proper Plus menu** — quick access to the file panel, feature notes, Adam A’s GitHub page, and the donation links.
+- **A proper Plus menu** — quick access to the file panel.
 
 ## In action
 
